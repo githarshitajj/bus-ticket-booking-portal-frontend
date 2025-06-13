@@ -3,7 +3,7 @@ package com.team4.frontend.controller;
 import com.team4.frontend.client.ApiClient;
 import com.team4.frontend.dto.form.TripFormDto;
 import com.team4.frontend.dto.request.TripRequestDto;
-import com.team4.frontend.dto.response.TripResponseDto;
+import com.team4.frontend.dto.response.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -22,18 +22,29 @@ public class TripController {
 
     private final ApiClient apiClient;
 
-
     @GetMapping("/add")
     public String showAddForm(Model model) {
         model.addAttribute("trip", new TripFormDto());
         model.addAttribute("mode", "add");
-        populateDropdowns(model);
+
+        boolean populated = populateDropdowns(model);
+        if (!populated) {
+            model.addAttribute("error", "Failed to load required dropdown data.");
+        }
+
         return "add-edit-trip";
     }
 
     @GetMapping("/edit/{id}")
     public String showEditForm(@PathVariable Integer id, Model model) {
-        TripResponseDto trip = apiClient.getTripById(id).getData();
+        ApiResponse<TripResponseDto> response = apiClient.getTripById(id);
+
+        if (!"success".equalsIgnoreCase(response.getStatus()) || response.getData() == null) {
+            model.addAttribute("error", "Failed to load trip: " + response.getMessage());
+            return "redirect:/trips";
+        }
+
+        TripResponseDto trip = response.getData();
 
         TripFormDto formDto = new TripFormDto();
         formDto.setId(trip.id());
@@ -51,13 +62,17 @@ public class TripController {
 
         model.addAttribute("trip", formDto);
         model.addAttribute("mode", "edit");
-        populateDropdowns(model);
+
+        boolean populated = populateDropdowns(model);
+        if (!populated) {
+            model.addAttribute("error", "Failed to load required dropdown data.");
+        }
+
         return "add-edit-trip";
     }
 
-
     @PostMapping("/save")
-    public String saveTrip(@ModelAttribute TripFormDto formDto, @RequestParam String mode) {
+    public String saveTrip(@ModelAttribute TripFormDto formDto, @RequestParam String mode, Model model) {
         TripRequestDto dto = new TripRequestDto(
                 formDto.getId(),
                 formDto.getRouteId(),
@@ -72,19 +87,55 @@ public class TripController {
                 formDto.getFare(),
                 formDto.getTripDate() != null ? formDto.getTripDate().atStartOfDay(ZoneId.systemDefault()).toInstant() : null
         );
+
         log.debug(dto.toString());
 
-        if ("add".equals(mode)) apiClient.createTrip(dto);
-        else apiClient.updateTrip(dto.id(), dto);
+        try {
+            if ("add".equals(mode)) {
+                ApiResponse<TripResponseDto> response = apiClient.createTrip(dto);
+                if (!"success".equalsIgnoreCase(response.getStatus())) {
+                    model.addAttribute("error", "Failed to add trip: " + response.getMessage());
+                    return "add-edit-trip";
+                }
+            } else {
+                ApiResponse<TripResponseDto> response = apiClient.updateTrip(dto.id(), dto);
+                if (!"success".equalsIgnoreCase(response.getStatus())) {
+                    model.addAttribute("error", "Failed to update trip: " + response.getMessage());
+                    return "add-edit-trip";
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error saving trip", e);
+            model.addAttribute("error", "Something went wrong: " + e.getMessage());
+            return "add-edit-trip";
+        }
 
         return "redirect:/trips";
     }
 
+    private boolean populateDropdowns(Model model) {
+        try {
+            var routeResp = apiClient.getAllRoutes(0, 100);
+            var busResp = apiClient.getAllBuses(0, 100);
+            var driverResp = apiClient.getAllDrivers(0, 100);
 
-    private void populateDropdowns(Model model) {
-        model.addAttribute("routes", apiClient.getAllRoutes(0, 100).getData().getContent());
-        model.addAttribute("buses", apiClient.getAllBuses(0, 100).getData().getContent());
-        model.addAttribute("drivers", apiClient.getAllDrivers(0, 100).getData().getContent());
-//        model.addAttribute("addresses", apiClient.getAllAddresses(0, 100).getData().getContent());
+            boolean allOk = "success".equalsIgnoreCase(routeResp.getStatus()) &&
+                    "success".equalsIgnoreCase(busResp.getStatus()) &&
+                    "success".equalsIgnoreCase(driverResp.getStatus());
+
+            if (!allOk || routeResp.getData() == null || busResp.getData() == null || driverResp.getData() == null) {
+                return false;
+            }
+
+            model.addAttribute("routes", routeResp.getData().getContent());
+            model.addAttribute("buses", busResp.getData().getContent());
+            model.addAttribute("drivers", driverResp.getData().getContent());
+
+            return true;
+
+        } catch (Exception e) {
+            log.error("Failed to populate dropdowns", e);
+            return false;
+        }
     }
 }

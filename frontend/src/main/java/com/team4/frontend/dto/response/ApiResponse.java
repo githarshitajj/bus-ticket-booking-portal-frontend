@@ -1,8 +1,10 @@
 package com.team4.frontend.dto.response;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class ApiResponse<T> {
     private String status;
     private int code;

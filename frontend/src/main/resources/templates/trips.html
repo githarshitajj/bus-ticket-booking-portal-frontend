@@ -48,18 +48,59 @@
 <body>
 
 <div class="container">
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+        <p th:text="${error}"></p>
+    </div>
     <h2>Trips List</h2>
 
     <div class="mb-3 text-end">
         <a href="/trips/add" class="btn btn-success fw-semibold">Add New Trip</a>
     </div>
 
+    <!-- Filters -->
+    <div class="mb-4">
+        <form th:action="@{/trips}" method="get" class="row g-3 align-items-end">
+            <!-- From City -->
+            <div class="col-md-3">
+                <label for="fromCity" class="form-label fw-semibold">From City</label>
+                <select id="fromCity" name="fromCity" class="form-select">
+                    <option value="">All</option>
+                    <option th:each="city : ${fromCities}"
+                            th:value="${city}"
+                            th:text="${city}"
+                            th:selected="${fromCity == city}">
+                    </option>
+                </select>
+            </div>
+
+            <!-- To City -->
+            <div class="col-md-3">
+                <label for="toCity" class="form-label fw-semibold">To City</label>
+                <select id="toCity" name="toCity" class="form-select">
+                    <option value="">All</option>
+                    <option th:each="city : ${toCities}"
+                            th:value="${city}"
+                            th:text="${city}"
+                            th:selected="${toCity == city}">
+                    </option>
+                </select>
+            </div>
+
+            <!-- Submit & Reset -->
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-dark fw-semibold w-50">Filter</button>
+                <a th:href="@{/trips}" class="btn btn-outline-secondary fw-semibold w-50">Reset</a>
+            </div>
+        </form>
+    </div>
+
+
+
     <div class="table-container">
         <div class="table-responsive">
             <table class="table table-bordered align-middle">
                 <thead>
                 <tr>
-                    <th>ID</th>
                     <th>Route</th>
                     <th>Bus Reg. No.</th>
                     <th>Driver 1</th>
@@ -73,7 +114,7 @@
                 </thead>
                 <tbody>
                 <tr th:each="trip : ${items}">
-                    <td th:text="${trip.id}">1</td>
+                    <td hidden="hidden" th:text="${trip.id}">1</td>
                     <td th:text="${trip.route.fromCity + ' → ' + trip.route.toCity}">Route</td>
                     <td th:text="${trip.bus.registrationNumber}">Bus</td>
                     <td th:text="${trip.driver1Driver.name}">Driver 1</td>
@@ -104,33 +145,36 @@
             </form>
 
             <!-- Pagination Navigation -->
-            <nav>
-                <ul class="pagination mb-0">
-                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                        <a class="page-link" th:href="@{/trips(page=0, size=${pageSize})}">First</a>
-                    </li>
-                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                        <a class="page-link" th:href="@{/trips(page=${currentPage - 1}, size=${pageSize})}">Previous</a>
-                    </li>
-
-                    <th:block th:with="start=${T(java.lang.Math).max(0, currentPage - 2)},
-                                      end=${T(java.lang.Math).min(totalPages - 1, currentPage + 2)}">
-                        <li class="page-item"
-                            th:each="i : ${#numbers.sequence(start, end)}"
-                            th:classappend="${i == currentPage} ? 'active'">
-                            <a class="page-link" th:href="@{/trips(page=${i}, size=${pageSize})}"
-                               th:text="${i + 1}">1</a>
+            <div th:if="${currentPage != null and totalPages != null and pageSize != null}">
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                            <a class="page-link" th:href="@{/trips(page=0, size=${pageSize})}">First</a>
                         </li>
-                    </th:block>
+                        <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                            <a class="page-link" th:href="@{/trips(page=${currentPage - 1}, size=${pageSize})}">Previous</a>
+                        </li>
 
-                    <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
-                        <a class="page-link" th:href="@{/trips(page=${currentPage + 1}, size=${pageSize})}">Next</a>
-                    </li>
-                    <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
-                        <a class="page-link" th:href="@{/trips(page=${totalPages - 1}, size=${pageSize})}">Last</a>
-                    </li>
-                </ul>
-            </nav>
+                        <th:block th:with="start=${T(java.lang.Math).max(0, currentPage - 2)},
+                                      end=${T(java.lang.Math).min(totalPages - 1, currentPage + 2)}">
+                            <li class="page-item"
+                                th:each="i : ${#numbers.sequence(start, end)}"
+                                th:classappend="${i == currentPage} ? 'active'">
+                                <a class="page-link" th:href="@{/trips(page=${i}, size=${pageSize})}"
+                                   th:text="${i + 1}">1</a>
+                            </li>
+                        </th:block>
+
+                        <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                            <a class="page-link" th:href="@{/trips(page=${currentPage + 1}, size=${pageSize})}">Next</a>
+                        </li>
+                        <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                            <a class="page-link" th:href="@{/trips(page=${totalPages - 1}, size=${pageSize})}">Last</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
         </div>
     </div>
 </div>

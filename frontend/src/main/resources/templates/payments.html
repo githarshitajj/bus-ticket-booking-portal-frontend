@@ -58,6 +58,9 @@
 <body>
 
 <div class="container">
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+        <p th:text="${error}"></p>
+    </div>
     <h2>Payments</h2>
 
     <!-- Add Payment Button -->
@@ -65,28 +68,60 @@
         <a th:href="@{/payments/add}" class="btn btn-success">Add Payment</a>
     </div>
 
+    <form th:action="@{/payments}" method="get" class="row g-3 align-items-end mb-4">
+        <div class="col-md-3">
+            <label for="paymentStatus" class="form-label fw-semibold">Payment Status</label>
+            <select id="paymentStatus" name="paymentStatus" class="form-select">
+                <option value="">All</option>
+                <option th:each="status : ${paymentStatuses}"
+                        th:value="${status}"
+                        th:text="${status}"
+                        th:selected="${paymentStatus == status}"></option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label for="bookingStatus" class="form-label fw-semibold">Booking Status</label>
+            <select id="bookingStatus" name="bookingStatus" class="form-select">
+                <option value="">All</option>
+                <option th:each="status : ${bookingStatuses}"
+                        th:value="${status}"
+                        th:text="${status}"
+                        th:selected="${bookingStatus == status}"></option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-dark w-100 fw-semibold">Filter</button>
+        </div>
+
+        <div class="col-md-3">
+            <a th:href="@{/payments}" class="btn btn-secondary w-100 fw-semibold">Reset</a>
+        </div>
+    </form>
+
+
     <div class="table-container">
         <div class="table-responsive">
             <table class="table table-bordered align-middle">
                 <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Booking ID</th>
                     <th>Customer Name</th>
                     <th>Amount</th>
                     <th>Payment Date</th>
-                    <th>Status</th>
+                    <th>Payment Status</th>
+                    <th>Booking Status</th>
                     <th class="actions-column">Actions</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="payment : ${items}">
-                    <td th:text="${payment.id}">1</td>
-                    <td th:text="${payment.booking.id}">101</td>
+                    <td hidden="hidden" th:text="${payment.id}">1</td>
                     <td th:text="${payment.customer?.name}">Some Name</td>
                     <td th:text="${payment.amount}">500.00</td>
                     <td th:text="${#temporals.format(payment.paymentDate, 'yyyy-MM-dd HH:mm')}">2025-06-11</td>
                     <td th:text="${payment.paymentStatus}">SUCCESS</td>
+                    <td th:text="${payment.booking.status}">101</td>
                     <td>
                         <a th:href="@{/payments/edit/{id}(id=${payment.id})}" class="btn btn-sm btn-primary">Edit</a>
                         <!-- Optional: View and Delete buttons -->
@@ -112,35 +147,39 @@
             </form>
 
             <!-- Pagination Navigation -->
-            <nav>
-                <ul class="pagination mb-0">
-                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                        <a class="page-link" th:href="@{/payments(page=0, size=${pageSize})}">First</a>
-                    </li>
-                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                        <a class="page-link" th:href="@{/payments(page=${currentPage - 1}, size=${pageSize})}">Previous</a>
-                    </li>
-
-                    <th:block th:with="start=${T(java.lang.Math).max(0, currentPage - 2)},
-                                     end=${T(java.lang.Math).min(totalPages - 1, currentPage + 2)}">
-                        <li class="page-item"
-                            th:each="i : ${#numbers.sequence(start, end)}"
-                            th:classappend="${i == currentPage} ? 'active'">
-                            <a class="page-link" th:href="@{/payments(page=${i}, size=${pageSize})}"
-                               th:text="${i + 1}">1</a>
+            <div th:if="${currentPage != null and totalPages != null and pageSize != null}">
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                            <a class="page-link" th:href="@{/payments(page=0, size=${pageSize})}">First</a>
                         </li>
-                    </th:block>
+                        <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                            <a class="page-link" th:href="@{/payments(page=${currentPage - 1}, size=${pageSize})}">Previous</a>
+                        </li>
 
-                    <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
-                        <a class="page-link" th:href="@{/payments(page=${currentPage + 1}, size=${pageSize})}">Next</a>
-                    </li>
-                    <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
-                        <a class="page-link" th:href="@{/payments(page=${totalPages - 1}, size=${pageSize})}">Last</a>
-                    </li>
-                </ul>
-            </nav>
+                        <th:block th:with="start=${T(java.lang.Math).max(0, currentPage - 2)},
+                                     end=${T(java.lang.Math).min(totalPages - 1, currentPage + 2)}">
+                            <li class="page-item"
+                                th:each="i : ${#numbers.sequence(start, end)}"
+                                th:classappend="${i == currentPage} ? 'active'">
+                                <a class="page-link" th:href="@{/payments(page=${i}, size=${pageSize})}"
+                                   th:text="${i + 1}">1</a>
+                            </li>
+                        </th:block>
+
+                        <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                            <a class="page-link" th:href="@{/payments(page=${currentPage + 1}, size=${pageSize})}">Next</a>
+                        </li>
+                        <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                            <a class="page-link" th:href="@{/payments(page=${totalPages - 1}, size=${pageSize})}">Last</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
         </div>
     </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

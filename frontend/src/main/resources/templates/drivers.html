@@ -48,6 +48,9 @@
 <body>
 
 <div class="container">
+  <div th:if="${error}" class="alert alert-danger" role="alert">
+    <p th:text="${error}"></p>
+  </div>
   <h2>Drivers List</h2>
 
   <!-- Add Driver Button -->
@@ -99,6 +102,7 @@
       </form>
 
       <!-- Page Navigation -->
+      <div th:if="${currentPage != null and totalPages != null and pageSize != null}">
       <nav>
         <ul class="pagination mb-0">
           <!-- First -->
@@ -133,6 +137,7 @@
           </li>
         </ul>
       </nav>
+      </div>
     </div>
   </div>
 </div>

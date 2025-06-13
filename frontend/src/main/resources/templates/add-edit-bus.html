@@ -6,6 +6,9 @@
 </head>
 <body>
 <div class="container mt-5">
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+        <p th:text="${error}"></p>
+    </div>
     <h2 th:text="${bus.id} != null ? 'Edit Bus' : 'Add Bus'">Bus Form</h2>
 
     <form th:action="@{/buses/update}" th:object="${bus}" method="post">
